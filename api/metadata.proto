@@ -1,0 +1,59 @@
+syntax = "proto3";
+
+package metadata;
+
+option go_package = "github.com/yourusername/hikari/metadata/proto";
+
+// Сервис для получения метаданных о контенте
+service MetadataService {
+    // Получить популярные фильмы
+    rpc GetPopularMovies(GetPopularMoviesRequest) returns (GetPopularMoviesResponse);
+    // Получить информацию о конкретном фильме по ID
+    rpc GetMovieByID(GetMovieByIDRequest) returns (Movie);
+    // Поиск фильмов по названию
+    rpc SearchMovies(SearchRequest) returns (SearchResponse);
+}
+
+// Запрос на получение популярных фильмов
+message GetPopularMoviesRequest {
+    int32 page = 1; // Номер страницы для пагинации
+    string language = 2; // Язык (например, "ru-RU")
+}
+
+// Ответ со списком популярных фильмов
+message GetPopularMoviesResponse {
+    repeated Movie results = 1;
+    int32 page = 2;
+    int32 total_pages = 3;
+}
+
+// Запрос на получение фильма по ID
+message GetMovieByIDRequest {
+    int64 movie_id = 1;
+    string language = 2;
+}
+
+// Запрос на поиск
+message SearchRequest {
+    string query = 1;
+    int32 page = 2;
+    string language = 3;
+}
+
+// Ответ с результатами поиска
+message SearchResponse {
+    repeated Movie results = 1;
+    int32 page = 2;
+    int32 total_pages = 3;
+}
+
+// Основная структура для фильма/сериала
+message Movie {
+    int64 id = 1;
+    string title = 2;
+    string original_title = 3;
+    string overview = 4;
+    string poster_path = 5;
+    string release_date = 6;
+    double vote_average = 7;
+}
