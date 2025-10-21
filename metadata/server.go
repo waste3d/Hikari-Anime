@@ -72,9 +72,13 @@ func (s *Server) GetPopularMovies(ctx context.Context, req *pb.GetPopularMoviesR
 	var movies []*pb.Movie
 	for _, movie := range tmdbResponse.Results {
 		movies = append(movies, &pb.Movie{
-			Id:         movie.ID,
-			Title:      movie.Title,
-			PosterPath: "https://image.tmdb.org/t/p/w500" + movie.PosterPath,
+			Id:            movie.ID,
+			Title:         movie.Title,
+			OriginalTitle: movie.OriginalTitle,
+			PosterPath:    "https://image.tmdb.org/t/p/w500" + movie.PosterPath,
+			Overview:      movie.Overview,
+			ReleaseDate:   movie.ReleaseDate,
+			VoteAverage:   movie.VoteAverage,
 		})
 	}
 
@@ -121,9 +125,13 @@ func (s *Server) SearchMovies(ctx context.Context, req *pb.SearchRequest) (*pb.S
 	var movies []*pb.Movie
 	for _, movie := range tmdbResponse.Results {
 		movies = append(movies, &pb.Movie{
-			Id:         movie.ID,
-			Title:      movie.Title,
-			PosterPath: "https://image.tmdb.org/t/p/w500" + movie.PosterPath,
+			Id:            movie.ID,
+			Title:         movie.Title,
+			PosterPath:    "https://image.tmdb.org/t/p/w500" + movie.PosterPath,
+			OriginalTitle: movie.OriginalTitle,
+			VoteAverage:   movie.VoteAverage,
+			Overview:      movie.Overview,
+			ReleaseDate:   movie.ReleaseDate,
 		})
 	}
 
@@ -165,8 +173,12 @@ func (s *Server) GetMovieByID(ctx context.Context, req *pb.GetMovieByIDRequest) 
 
 	log.Printf("Получен фильм от TMDb: %s", tmdbResponse.Title)
 	return &pb.Movie{
-		Id:         tmdbResponse.ID,
-		Title:      tmdbResponse.Title,
-		PosterPath: "https://image.tmdb.org/t/p/w500" + tmdbResponse.PosterPath,
+		Id:            tmdbResponse.ID,
+		Title:         tmdbResponse.Title,
+		OriginalTitle: tmdbResponse.OriginalTitle,
+		PosterPath:    "https://image.tmdb.org/t/p/w500" + tmdbResponse.PosterPath,
+		Overview:      tmdbResponse.Overview,
+		VoteAverage:   tmdbResponse.VoteAverage,
+		ReleaseDate:   tmdbResponse.ReleaseDate,
 	}, nil
 }
