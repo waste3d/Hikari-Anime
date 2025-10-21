@@ -136,3 +136,37 @@ func (s *Server) SearchMovies(ctx context.Context, req *pb.SearchRequest) (*pb.S
 	log.Printf("Отправляю ответ клиенту. Количество фильмов: %d", len(response.Results))
 	return response, nil
 }
+
+func (s *Server) GetMovieByID(ctx context.Context, req *pb.GetMovieByIDRequest) (*pb.Movie, error) {
+	movieID := req.GetMovieId()
+
+	url := fmt.Sprintf("%s/movie/%d?api_key=%s&language=%s",
+		tmdbBaseURL, movieID, tmdbAPIKey, req.GetLanguage())
+	log.Printf("Выполняю запрос к TMDb по URL: %s", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("ОШИБКА при выполнении HTTP-запроса к TMDb: %v", err)
+		return nil, fmt.Errorf("ошибка при выполнении запроса к TMDb: %w", err)
+	}
+	defer resp.Body.Close()
+
+	log.Printf("Статус ответа от TMDb: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Получен не-OK статус от TMDb: %d", resp.StatusCode)
+		return nil, fmt.Errorf("TMDb API вернул ошибку: %s", resp.Status)
+	}
+
+	var tmdbResponse TMDbMovie
+	if err := json.NewDecoder(resp.Body).Decode(&tmdbResponse); err != nil {
+		log.Printf("ОШИБКА при декодировании JSON ответа от TMDb: %v", err)
+		return nil, fmt.Errorf("ошибка при декодировании ответа от TMDb: %w", err)
+	}
+
+	log.Printf("Получен фильм от TMDb: %s", tmdbResponse.Title)
+	return &pb.Movie{
+		Id:         tmdbResponse.ID,
+		Title:      tmdbResponse.Title,
+		PosterPath: "https://image.tmdb.org/t/p/w500" + tmdbResponse.PosterPath,
+	}, nil
+}
