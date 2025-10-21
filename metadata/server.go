@@ -87,3 +87,52 @@ func (s *Server) GetPopularMovies(ctx context.Context, req *pb.GetPopularMoviesR
 	log.Printf("Отправляю ответ клиенту. Количество фильмов: %d", len(response.Results))
 	return response, nil
 }
+
+func (s *Server) SearchMovies(ctx context.Context, req *pb.SearchRequest) (*pb.SearchResponse, error) {
+	query := req.GetQuery()
+	page := req.GetPage()
+	language := req.GetLanguage()
+
+	url := fmt.Sprintf("%s/search/movie?api_key=%s&language=%s&query=%s&page=%d",
+		tmdbBaseURL, tmdbAPIKey, language, query, page)
+	log.Printf("Выполняю запрос к TMDb по URL: %s", url)
+
+	resp, err := http.Get(url)
+	if err != nil {
+		log.Printf("ОШИБКА при выполнении HTTP-запроса к TMDb: %v", err)
+		return nil, fmt.Errorf("ошибка при выполнении запроса к TMDb: %w", err)
+	}
+	defer resp.Body.Close()
+
+	log.Printf("Статус ответа от TMDb: %s", resp.Status)
+	if resp.StatusCode != http.StatusOK {
+		log.Printf("Получен не-OK статус от TMDb: %d", resp.StatusCode)
+		return nil, fmt.Errorf("TMDb API вернул ошибку: %s", resp.Status)
+	}
+
+	var tmdbResponse TMDbPopularResponse
+	if err := json.NewDecoder(resp.Body).Decode(&tmdbResponse); err != nil {
+		log.Printf("ОШИБКА при декодировании JSON ответа от TMDb: %v", err)
+		return nil, fmt.Errorf("ошибка при декодировании ответа от TMDb: %w", err)
+	}
+
+	log.Printf("Получено %d фильмов от TMDb", len(tmdbResponse.Results))
+
+	var movies []*pb.Movie
+	for _, movie := range tmdbResponse.Results {
+		movies = append(movies, &pb.Movie{
+			Id:         movie.ID,
+			Title:      movie.Title,
+			PosterPath: "https://image.tmdb.org/t/p/w500" + movie.PosterPath,
+		})
+	}
+
+	response := &pb.SearchResponse{
+		Results:    movies,
+		Page:       int32(tmdbResponse.Page),
+		TotalPages: int32(tmdbResponse.TotalPages),
+	}
+
+	log.Printf("Отправляю ответ клиенту. Количество фильмов: %d", len(response.Results))
+	return response, nil
+}
