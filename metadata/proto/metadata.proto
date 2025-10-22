@@ -12,6 +12,10 @@ service MetadataService {
     rpc GetMovieByID(GetMovieByIDRequest) returns (Movie);
     // Поиск фильмов по названию
     rpc SearchMovies(SearchRequest) returns (SearchResponse);
+
+
+    // Поиск сериалов по названию
+    rpc SearchTVShows(SearchRequest) returns (SearchResponse);
 }
 
 // Запрос на получение популярных фильмов
