@@ -31,6 +31,7 @@ func main() {
 	router.GET("/api/v1/movies/popular", getPopularMoviesHandler(metadataServiceClient))
 	router.GET("/api/v1/movies/search", searchMoviesHandler(metadataServiceClient))
 	router.GET("/api/v1/movies/:id", movieByIDHandler(metadataServiceClient))
+	router.GET("/api/v1/tv/search", searchTVShowsHandler(metadataServiceClient))
 
 	err = router.Run(gatewayPort)
 	if err != nil {
@@ -127,6 +128,40 @@ func movieByIDHandler(client pb.MetadataServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to get movie by ID"})
 			return
 		}
+		c.JSON(http.StatusOK, response)
+	}
+}
+
+func searchTVShowsHandler(metadataServiceClient pb.MetadataServiceClient) func(c *gin.Context) {
+	return func(c *gin.Context) {
+		query := c.Query("query")
+		page := c.Query("page")
+		language := c.Query("language")
+
+		if page == "" || language == "" {
+			page = c.DefaultQuery("page", "1")
+			language = c.DefaultQuery("language", "ru-RU")
+		}
+
+		pageInt, err := strconv.Atoi(page)
+		if err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid page parameter"})
+			return
+		}
+
+		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+		defer cancel()
+
+		response, err := metadataServiceClient.SearchTVShows(ctx, &pb.SearchRequest{
+			Query:    query,
+			Page:     int32(pageInt),
+			Language: language,
+		})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "failed to search TV shows"})
+			return
+		}
+
 		c.JSON(http.StatusOK, response)
 	}
 }
