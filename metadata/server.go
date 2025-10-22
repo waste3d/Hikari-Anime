@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"net/url"
 
 	pb "github.com/waste3d/Hikari-Anime/metadata/proto"
 	"github.com/waste3d/Hikari-Anime/metadata/utils"
@@ -104,8 +105,10 @@ func (s *Server) SearchMovies(ctx context.Context, req *pb.SearchRequest) (*pb.S
 		return nil, status.Errorf(codes.InvalidArgument, "поисковый запрос (query) не может быть пустым")
 	}
 
+	encodedQuery := url.QueryEscape(query)
+
 	url := fmt.Sprintf("%s/search/movie?api_key=%s&language=%s&query=%s&page=%d",
-		tmdbBaseURL, tmdbAPIKey, req.GetLanguage(), query, req.GetPage())
+		tmdbBaseURL, tmdbAPIKey, req.GetLanguage(), encodedQuery, req.GetPage())
 	log.Printf("Выполняю запрос к TMDb по URL: %s", url)
 
 	resp, err := utils.GetRequest(url)
@@ -186,8 +189,10 @@ func (s *Server) SearchTVShows(ctx context.Context, req *pb.SearchRequest) (*pb.
 		return nil, status.Errorf(codes.InvalidArgument, "поисковый запрос (query) не может быть пустым")
 	}
 
+	encodedQuery := url.QueryEscape(query)
+
 	url := fmt.Sprintf("%s/search/tv?api_key=%s&language=%s&query=%s&page=%d",
-		tmdbBaseURL, tmdbAPIKey, req.GetLanguage(), query, req.GetPage())
+		tmdbBaseURL, tmdbAPIKey, req.GetLanguage(), encodedQuery, req.GetPage())
 	log.Printf("Выполняю запрос к TMDb по URL: %s", url)
 
 	resp, err := utils.GetRequest(url)
