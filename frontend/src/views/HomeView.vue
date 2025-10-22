@@ -1,16 +1,34 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
+import { RouterLink } from 'vue-router';
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8081/api/v1';
+const API_BASE_URL = 'http://localhost:8088/api/v1';
 
 const searchQuery = ref('');
 const results = ref([]);
 const isLoading = ref(false);
 
+async function fetchPopular() {
+  isLoading.value = true;
+  searchQuery.value = '';
+  results.value = [];
+
+  try {
+    const response = await axios.get(`${API_BASE_URL}/movies/popular`, {
+      params: { language: 'ru-RU' }
+    });
+    results.value = response.data.results.filter(item => item.poster_path);
+  } catch (error) {
+    console.error("Ошибка при загрузке популярных фильмов:", error);
+  } finally {
+    isLoading.value = false;
+  }
+}
+
 async function performSearch() {
   if (!searchQuery.value.trim()) return;
-
+  
   isLoading.value = true;
   results.value = [];
 
@@ -19,14 +37,20 @@ async function performSearch() {
       axios.get(`${API_BASE_URL}/movies/search`, { params: { query: searchQuery.value, language: 'ru-RU' } }),
       axios.get(`${API_BASE_URL}/tv/search`, { params: { query: searchQuery.value, language: 'ru-RU' } })
     ]);
-    results.value = [...movieRes.data.results, ...tvRes.data.results];
-    console.log('Полученные результаты:', results.value);
+    
+    const combinedResults = [...movieRes.data.results, ...tvRes.data.results];
+    results.value = combinedResults.filter(item => item.poster_path);
+
   } catch (error) {
     console.error("Ошибка при поиске:", error);
   } finally {
     isLoading.value = false;
   }
 }
+
+onMounted(() => {
+  fetchPopular();
+});
 </script>
 
 <template>
@@ -45,15 +69,24 @@ async function performSearch() {
       <button class="search-button" @click="performSearch">Найти</button>
     </div>
 
-    <div v-if="isLoading" class="loader">
-      Загрузка...
+    <div class="filters">
+      <button @click="fetchPopular" class="filter-button active">Популярное</button>
+    </div>
+
+    <div v-if="isLoading" class="loader-container">
+      <div class="spinner"></div>
     </div>
 
     <div v-if="results.length > 0 && !isLoading" class="results-grid">
-      <div v-for="item in results" :key="item.id" class="result-card">
+      <RouterLink 
+        v-for="item in results" 
+        :key="item.id" 
+        :to="{ name: 'movie-detail', params: { id: item.id } }" 
+        class="result-card"
+      >
         <img :src="item.poster_path" :alt="item.title" class="poster" loading="lazy"/>
         <h3 class="item-title" :title="item.title">{{ item.title }}</h3>
-      </div>
+      </RouterLink>
     </div>
   </main>
 </template>
@@ -69,7 +102,7 @@ async function performSearch() {
 .title {
   font-size: 4rem;
   font-weight: 700;
-  color: #c8a2c8; /* Светло-фиолетовый */
+  color: #c8a2c8;
   margin-bottom: 0;
 }
 
@@ -84,7 +117,7 @@ async function performSearch() {
   display: flex;
   justify-content: center;
   gap: 10px;
-  margin-bottom: 50px;
+  margin-bottom: 20px;
 }
 
 .search-input {
@@ -100,7 +133,7 @@ async function performSearch() {
 }
 
 .search-input:focus {
-  border-color: #6e48d1; /* Фиолетовый */
+  border-color: #6e48d1;
 }
 
 .search-button {
@@ -108,7 +141,7 @@ async function performSearch() {
   font-size: 1.1rem;
   font-weight: bold;
   color: #fff;
-  background: linear-gradient(45deg, #6e48d1, #486ed1); /* Градиент от фиолетового к синему */
+  background: linear-gradient(45deg, #6e48d1, #486ed1);
   border: none;
   border-radius: 30px;
   cursor: pointer;
@@ -119,10 +152,51 @@ async function performSearch() {
   transform: scale(1.05);
 }
 
-.loader {
+.filters {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  margin-bottom: 50px;
+}
+
+.filter-button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  color: #a9a9a9;
+  background-color: transparent;
+  border: 1px solid #333;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.filter-button:hover,
+.filter-button.active {
+  color: #fff;
+  background-color: #6e48d1;
+  border-color: #6e48d1;
+}
+
+.loader-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
   margin-top: 50px;
-  font-size: 1.5rem;
-  color: #c8a2c8;
+}
+
+.spinner {
+  width: 50px;
+  height: 50px;
+  border: 5px solid #4a4a4a;
+  border-top-color: #c8a2c8;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 .results-grid {
@@ -138,6 +212,8 @@ async function performSearch() {
   overflow: hidden;
   transition: transform 0.2s;
   cursor: pointer;
+  text-decoration: none;
+  color: inherit;
 }
 
 .result-card:hover {
@@ -150,7 +226,7 @@ async function performSearch() {
   height: 300px;
   object-fit: cover;
   display: block;
-  background-color: #222; /* Плейсхолдер, пока картинка грузится */
+  background-color: #222;
 }
 
 .item-title {
